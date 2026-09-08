@@ -2,6 +2,11 @@ import React from 'react';
 import { fetchFromBackend } from '../../lib/api';
 import LabsExplorerClient from './LabsExplorerClient';
 
+export const metadata = {
+  title: 'University Research Laboratories & Equipment | SURC',
+  description: 'Explore state-of-the-art laboratory facilities and specialized equipment at Salahaddin University-Erbil Research Center.',
+};
+
 interface Equipment {
   id: string;
   name: string;

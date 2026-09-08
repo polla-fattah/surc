@@ -92,7 +92,7 @@ export default function LabsExplorerClient({ initialLabs }: Props) {
       {/* 1. Page Header (Without "Specialized Facilities" badge as requested) */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-[var(--secondary-blue)] tracking-tight">
-          Research Laboratories & Equipment
+          University Research Laboratories & Equipment
         </h1>
 
         {/* Real-time Interactive Search Bar */}
