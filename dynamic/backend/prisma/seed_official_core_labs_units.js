@@ -163,16 +163,16 @@ async function main() {
       description: 'Leading research in regional environmental monitoring, climate change impact assessment, air and water quality analytics, and GIS spatial modeling across Kurdistan.'
     },
     {
-      id: 'data-analysis-and-ai',
+      id: 'data-analysis-ai',
       title: 'Data Analysis and AI Unit',
       name: 'Data Analysis and AI Unit',
       image: '/images/labs/lab-engineering.svg',
       description: 'Pioneering computational research in artificial intelligence, deep learning, temporal data mining, medical image classification, and Kurdish natural language processing (NLP).'
     },
     {
-      id: 'development-and-cooperation',
-      title: 'Development and Cooperation Unit',
-      name: 'Development and Cooperation Unit',
+      id: 'development-cooperation',
+      title: 'Development & Cooperation Unit',
+      name: 'Development & Cooperation Unit',
       image: '/images/labs/lab-chemistry.svg',
       description: 'Coordinates international research grants, multi-institutional university collaborations, industrial technology transfer, and evidence-based policy outreach.'
     }
