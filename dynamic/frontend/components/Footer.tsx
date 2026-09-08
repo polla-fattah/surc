@@ -8,9 +8,9 @@ export default function Footer() {
   const footerLinks = {
     resources: [
       { name: 'Research Units', href: '/units' },
-      { name: 'Uni Labs', href: '/labs' },
       { name: 'Equipment Bookings', href: '/labs#booking' },
       { name: 'Public Dataset Catalogs', href: '/datasets' },
+      { name: 'Uni Labs', href: '/labs' },
     ],
     governance: [
       { name: 'Ethics & Guidelines', href: '/regulations' },

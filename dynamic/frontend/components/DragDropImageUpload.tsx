@@ -50,12 +50,25 @@ export default function DragDropImageUpload({
       });
 
       if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || 'Upload failed');
+        let errMsg = `Upload failed (${res.status})`;
+        try {
+          const errJson = await res.json();
+          errMsg = errJson.error || errMsg;
+        } catch (_) {}
+        throw new Error(errMsg);
       }
 
-      const data = await res.json();
-      const uploadedUrls: string[] = data.urls || [data.url];
+      let data: any;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        throw new Error('Server returned invalid upload response.');
+      }
+
+      const uploadedUrls: string[] = data.urls || (data.url ? [data.url] : []);
+      if (!uploadedUrls.length) {
+        throw new Error('No uploaded file URL returned by server.');
+      }
 
       if (multiple) {
         onChange([...urls, ...uploadedUrls]);
