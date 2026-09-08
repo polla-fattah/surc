@@ -19,7 +19,11 @@ import {
   ExternalLink,
   Users,
   Briefcase,
-  BookOpen
+  BookOpen,
+  Edit,
+  Pencil,
+  Search,
+  X
 } from 'lucide-react';
 
 interface FormItem {
@@ -69,11 +73,15 @@ interface EventItem {
   title: string;
   slug: string;
   eventDate: string;
+  eventTime?: string | null;
+  location?: string | null;
   image: string | null;
   galleryImages?: string[];
   category: string | null;
   description: string | null;
+  content?: string | null;
   draft: boolean;
+  featured?: boolean;
 }
 
 interface StaffItem {
@@ -149,7 +157,29 @@ export default function MasterAdminConsoleClient({
   const [newHeroImage, setNewHeroImage] = useState('');
   const [newGalleryImages, setNewGalleryImages] = useState<string[]>([]);
   const [newEventDate, setNewEventDate] = useState('');
+  const [newEventLocation, setNewEventLocation] = useState('SURC');
+  const [newEventTime, setNewEventTime] = useState('10:00 AM - 01:00 PM');
+  const [newContent, setNewContent] = useState('');
+  const [newFeatured, setNewFeatured] = useState(false);
   const [newDraft, setNewDraft] = useState(false);
+
+  // Event Edit State
+  const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editEventDate, setEditEventDate] = useState('');
+  const [editEventTime, setEditEventTime] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editHeroImage, setEditHeroImage] = useState('');
+  const [editGalleryImages, setEditGalleryImages] = useState<string[]>([]);
+  const [editDraft, setEditDraft] = useState(false);
+  const [editFeatured, setEditFeatured] = useState(false);
+
+  // Admin Event Search & Pagination
+  const [eventAdminSearch, setEventAdminSearch] = useState('');
+  const [eventAdminLimit, setEventAdminLimit] = useState(25);
 
   const resetFormFields = () => {
     setNewId('');
@@ -163,8 +193,66 @@ export default function MasterAdminConsoleClient({
     setNewHeroImage('');
     setNewGalleryImages([]);
     setNewEventDate('');
+    setNewEventLocation('SURC');
+    setNewEventTime('10:00 AM - 01:00 PM');
+    setNewContent('');
+    setNewFeatured(false);
     setNewDraft(false);
     setIsAdding(false);
+  };
+
+  const openEditEventModal = (ev: EventItem) => {
+    setEditingEvent(ev);
+    setEditTitle(ev.title || '');
+    setEditCategory(ev.category || 'Seminar');
+    const formattedDate = ev.eventDate ? new Date(ev.eventDate).toISOString().split('T')[0] : '';
+    setEditEventDate(formattedDate);
+    setEditEventTime(ev.eventTime || '10:00 AM - 01:00 PM');
+    setEditLocation(ev.location || 'SURC');
+    setEditDescription(ev.description || '');
+    setEditContent(ev.content || ev.description || '');
+    setEditHeroImage(ev.image || '');
+    setEditGalleryImages(Array.isArray(ev.galleryImages) ? ev.galleryImages : []);
+    setEditDraft(Boolean(ev.draft));
+    setEditFeatured(Boolean(ev.featured));
+  };
+
+  const handleUpdateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEvent) return;
+    setFeedbackMsg(null);
+
+    try {
+      const res = await fetch(`/api/events/${editingEvent.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editTitle,
+          category: editCategory,
+          eventDate: editEventDate ? new Date(editEventDate).toISOString() : new Date().toISOString(),
+          eventTime: editEventTime,
+          location: editLocation,
+          description: editDescription,
+          content: editContent,
+          image: editHeroImage || null,
+          galleryImages: editGalleryImages,
+          draft: editDraft,
+          featured: editFeatured
+        })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setEvents(events.map(ev => ev.id === editingEvent.id ? { ...ev, ...updated } : ev));
+        setFeedbackMsg({ type: 'success', text: `Event "${editTitle}" updated successfully!` });
+        setEditingEvent(null);
+      } else {
+        const errJson = await res.json();
+        setFeedbackMsg({ type: 'error', text: errJson.error || 'Failed to update event.' });
+      }
+    } catch (err) {
+      setFeedbackMsg({ type: 'error', text: 'Error updating event announcement.' });
+    }
   };
 
   // Toggle Draft / Published
@@ -243,12 +331,15 @@ export default function MasterAdminConsoleClient({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: newTitle,
-            eventDate: newEventDate || new Date().toISOString(),
+            eventDate: newEventDate ? new Date(newEventDate).toISOString() : new Date().toISOString(),
+            eventTime: newEventTime || '10:00 AM - 01:00 PM',
+            location: newEventLocation || 'SURC',
             image: newHeroImage || null,
             galleryImages: galleryArr,
             category: newCategory || 'Seminar',
             description: newDescription || null,
-            content: newDescription || null,
+            content: newContent || newDescription || null,
+            featured: newFeatured,
             draft: newDraft
           })
         });
@@ -590,6 +681,8 @@ export default function MasterAdminConsoleClient({
                     <option value="Conference">Conference</option>
                     <option value="Symposium">Symposium</option>
                     <option value="Research Activity">Research Activity</option>
+                    <option value="Award Ceremony">Award Ceremony</option>
+                    <option value="Official Announcement">Official Announcement</option>
                   </select>
                 </div>
 
@@ -602,6 +695,51 @@ export default function MasterAdminConsoleClient({
                     onChange={e => setNewEventDate(e.target.value)}
                     className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700">Location</label>
+                  <input 
+                    type="text" 
+                    value={newEventLocation}
+                    onChange={e => setNewEventLocation(e.target.value)}
+                    placeholder="e.g. SURC or Hall 3" 
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700">Time</label>
+                  <input 
+                    type="text" 
+                    value={newEventTime}
+                    onChange={e => setNewEventTime(e.target.value)}
+                    placeholder="e.g. 10:00 AM - 01:00 PM" 
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700">Full Article Content</label>
+                  <textarea 
+                    rows={4}
+                    value={newContent}
+                    onChange={e => setNewContent(e.target.value)}
+                    placeholder="Enter full event announcements, agenda, or background text..." 
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center space-x-2 text-xs font-bold text-slate-700 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={newFeatured}
+                      onChange={e => setNewFeatured(e.target.checked)}
+                      className="w-4 h-4 text-[var(--primary-maroon)] rounded"
+                    />
+                    <span>★ Mark as Featured Announcement (Pin on Homepage)</span>
+                  </label>
                 </div>
 
                 {/* MAIN HERO IMAGE (DRAG & DROP) */}
@@ -725,52 +863,122 @@ export default function MasterAdminConsoleClient({
 
         {activeTab === 'events' && (
           <div className="space-y-4">
-            {events.slice(0, 15).map(ev => (
-              <div key={ev.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                      ev.draft ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-[var(--primary-maroon)]'
-                    }`}>
-                      {ev.draft ? 'Draft' : (ev.category || 'Event')}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400">
-                      {new Date(ev.eventDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-extrabold text-[var(--secondary-blue)]">{ev.title}</h4>
-                  <p className="text-[10px] text-slate-500 font-medium line-clamp-2">{ev.description || 'No description.'}</p>
-                </div>
-
-                <div className="flex items-center space-x-3 self-end sm:self-center">
-                  <button
-                    onClick={() => toggleDraft('events', ev.slug, ev.draft)}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold flex items-center space-x-1 transition-all ${
-                      ev.draft ? 'bg-slate-200 text-slate-700 hover:bg-green-100 hover:text-green-800' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                    }`}
-                  >
-                    {ev.draft ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                    <span>{ev.draft ? 'Publish' : 'Set Draft'}</span>
-                  </button>
-
-                  <a 
-                    href={`/events/${ev.slug}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-[10px] font-bold flex items-center space-x-1"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-
-                  <button
-                    onClick={() => deleteItem('events', ev.slug)}
-                    className="p-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+            {/* Search Filter for Events in Admin Console */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search events by title or description..."
+                  value={eventAdminSearch}
+                  onChange={(e) => setEventAdminSearch(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--primary-maroon)]/20"
+                />
               </div>
-            ))}
+              <div className="text-xs font-bold text-slate-500">
+                Showing <span className="text-[var(--primary-maroon)]">
+                  {Math.min(
+                    eventAdminLimit,
+                    events.filter(e => 
+                      !eventAdminSearch.trim() || 
+                      e.title.toLowerCase().includes(eventAdminSearch.toLowerCase()) ||
+                      (e.description && e.description.toLowerCase().includes(eventAdminSearch.toLowerCase()))
+                    ).length
+                  )}
+                </span> of <span className="text-[var(--secondary-blue)]">
+                  {events.filter(e => 
+                    !eventAdminSearch.trim() || 
+                    e.title.toLowerCase().includes(eventAdminSearch.toLowerCase()) ||
+                    (e.description && e.description.toLowerCase().includes(eventAdminSearch.toLowerCase()))
+                  ).length}
+                </span> matching events
+              </div>
+            </div>
+
+            {events
+              .filter(e => 
+                !eventAdminSearch.trim() || 
+                e.title.toLowerCase().includes(eventAdminSearch.toLowerCase()) ||
+                (e.description && e.description.toLowerCase().includes(eventAdminSearch.toLowerCase()))
+              )
+              .slice(0, eventAdminLimit)
+              .map(ev => (
+                <div key={ev.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-[var(--primary-maroon)] transition-all">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                        ev.draft ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-[var(--primary-maroon)]'
+                      }`}>
+                        {ev.draft ? 'Draft' : (ev.category || 'Event')}
+                      </span>
+                      {ev.featured && (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-extrabold uppercase bg-amber-100 text-amber-800">
+                          ★ Featured
+                        </span>
+                      )}
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {new Date(ev.eventDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-extrabold text-[var(--secondary-blue)]">{ev.title}</h4>
+                    <p className="text-[10px] text-slate-500 font-medium line-clamp-2">{ev.description || 'No description text.'}</p>
+                  </div>
+
+                  <div className="flex items-center space-x-2.5 self-end sm:self-center shrink-0">
+                    <button
+                      onClick={() => openEditEventModal(ev)}
+                      className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-[10px] font-extrabold flex items-center space-x-1 transition-all"
+                      title="Edit Event Details"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+
+                    <button
+                      onClick={() => toggleDraft('events', ev.id, ev.draft)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold flex items-center space-x-1 transition-all ${
+                        ev.draft ? 'bg-slate-200 text-slate-700 hover:bg-green-100 hover:text-green-800' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                      }`}
+                    >
+                      {ev.draft ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                      <span>{ev.draft ? 'Publish' : 'Draft'}</span>
+                    </button>
+
+                    <a 
+                      href={`/events/${ev.slug}`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-[10px] font-bold flex items-center space-x-1"
+                      title="View Public Page"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+
+                    <button
+                      onClick={() => deleteItem('events', ev.id)}
+                      className="p-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                      title="Delete Event"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+            {events.filter(e => 
+              !eventAdminSearch.trim() || 
+              e.title.toLowerCase().includes(eventAdminSearch.toLowerCase()) ||
+              (e.description && e.description.toLowerCase().includes(eventAdminSearch.toLowerCase()))
+            ).length > eventAdminLimit && (
+              <div className="text-center pt-3">
+                <button
+                  onClick={() => setEventAdminLimit(prev => prev + 25)}
+                  className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold transition-all cursor-pointer"
+                >
+                  Load More Events in Admin List
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -1115,6 +1323,183 @@ export default function MasterAdminConsoleClient({
         )}
 
       </div>
+
+      {/* EDIT EVENT MODAL */}
+      {editingEvent && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-3xl w-full p-8 border border-slate-200 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto">
+            
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <span className="text-[10px] font-extrabold text-[var(--primary-maroon)] uppercase tracking-wider">Edit Event Announcement</span>
+                <h3 className="text-lg font-extrabold text-[var(--secondary-blue)]">{editingEvent.title}</h3>
+              </div>
+              <button 
+                onClick={() => setEditingEvent(null)}
+                className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateEvent} className="space-y-6 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Title */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700">Title *</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                {/* Category */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700">Category *</label>
+                  <select
+                    value={editCategory}
+                    onChange={e => setEditCategory(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  >
+                    <option value="Seminar">Seminar</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Conference">Conference</option>
+                    <option value="Symposium">Symposium</option>
+                    <option value="Research Activity">Research Activity</option>
+                    <option value="Award Ceremony">Award Ceremony</option>
+                    <option value="Official Announcement">Official Announcement</option>
+                  </select>
+                </div>
+
+                {/* Date */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700">Event Date *</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={editEventDate}
+                    onChange={e => setEditEventDate(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                {/* Location */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700">Location</label>
+                  <input 
+                    type="text" 
+                    value={editLocation}
+                    onChange={e => setEditLocation(e.target.value)}
+                    placeholder="e.g. SURC"
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                {/* Time */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700">Time</label>
+                  <input 
+                    type="text" 
+                    value={editEventTime}
+                    onChange={e => setEditEventTime(e.target.value)}
+                    placeholder="e.g. 10:00 AM - 01:00 PM"
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                {/* Short Description */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700">Short Summary / Description</label>
+                  <textarea 
+                    rows={3}
+                    value={editDescription}
+                    onChange={e => setEditDescription(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                {/* Full Content */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="font-bold text-slate-700">Full Article Content</label>
+                  <textarea 
+                    rows={5}
+                    value={editContent}
+                    onChange={e => setEditContent(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold"
+                  />
+                </div>
+
+                {/* Toggles */}
+                <div className="md:col-span-2 flex flex-wrap gap-6 pt-2">
+                  <label className="flex items-center space-x-2 text-xs font-bold text-slate-700 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={editDraft}
+                      onChange={e => setEditDraft(e.target.checked)}
+                      className="w-4 h-4 text-[var(--primary-maroon)] rounded"
+                    />
+                    <span>Save as Draft (Hide from public events explorer)</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 text-xs font-bold text-slate-700 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={editFeatured}
+                      onChange={e => setEditFeatured(e.target.checked)}
+                      className="w-4 h-4 text-[var(--primary-maroon)] rounded"
+                    />
+                    <span>★ Mark as Featured Announcement</span>
+                  </label>
+                </div>
+
+                {/* HERO COVER IMAGE */}
+                <div className="md:col-span-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <DragDropImageUpload
+                    multiple={false}
+                    label="Main Cover Banner Image"
+                    description="Upload or change the primary event banner image."
+                    value={editHeroImage}
+                    onChange={(val) => setEditHeroImage(val)}
+                  />
+                </div>
+
+                {/* GALLERY IMAGES */}
+                <div className="md:col-span-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <DragDropImageUpload
+                    multiple={true}
+                    label="Photo Gallery Images (Batch Upload)"
+                    description="Upload or modify event photos displayed in the bottom photo gallery."
+                    value={editGalleryImages}
+                    onChange={(val) => setEditGalleryImages(val)}
+                  />
+                </div>
+
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingEvent(null)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2.5 rounded-xl text-xs font-bold bg-[var(--primary-maroon)] text-white hover:bg-red-900 shadow-md transition-all"
+                >
+                  Update Event
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

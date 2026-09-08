@@ -288,6 +288,44 @@ async function main() {
         draft: Boolean(fm.draft)
       }
     });
+
+    // Seed equipment for this laboratory
+    if (fm.equipment && Array.isArray(fm.equipment)) {
+      for (let eqIdx = 0; eqIdx < fm.equipment.length; eqIdx++) {
+        const eqItem = fm.equipment[eqIdx];
+        const eqId = eqItem.id || `eq-${fm.id}-${String(eqIdx + 1).padStart(3, '0')}`;
+        await prisma.equipment.upsert({
+          where: { id: eqId },
+          update: {
+            name: eqItem.name || 'Scientific Equipment',
+            labId: fm.id,
+            category: eqItem.category || fm.category || null,
+            description: eqItem.description || null,
+            status: eqItem.status || 'available',
+            workingUnits: typeof eqItem.working_units === 'number' ? eqItem.working_units : 1,
+            outOfOrder: typeof eqItem.out_of_order === 'number' ? eqItem.out_of_order : 0,
+            totalUnits: typeof eqItem.total_units === 'number' ? eqItem.total_units : (typeof eqItem.working_units === 'number' ? eqItem.working_units : 1),
+            model: eqItem.model || null,
+            image: eqItem.image || null,
+            specifications: Array.isArray(eqItem.specifications) ? eqItem.specifications : []
+          },
+          create: {
+            id: eqId,
+            name: eqItem.name || 'Scientific Equipment',
+            labId: fm.id,
+            category: eqItem.category || fm.category || null,
+            description: eqItem.description || null,
+            status: eqItem.status || 'available',
+            workingUnits: typeof eqItem.working_units === 'number' ? eqItem.working_units : 1,
+            outOfOrder: typeof eqItem.out_of_order === 'number' ? eqItem.out_of_order : 0,
+            totalUnits: typeof eqItem.total_units === 'number' ? eqItem.total_units : (typeof eqItem.working_units === 'number' ? eqItem.working_units : 1),
+            model: eqItem.model || null,
+            image: eqItem.image || null,
+            specifications: Array.isArray(eqItem.specifications) ? eqItem.specifications : []
+          }
+        });
+      }
+    }
   }
 
   // 7. Seed Datasets, Regulations, Templates & Events

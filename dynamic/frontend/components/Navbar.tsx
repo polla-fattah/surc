@@ -12,11 +12,11 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'Home', href: '/' },
+    { name: 'Research Labs', href: '/labs' },
     { name: 'Research Units', href: '/units' },
     { name: 'Researchers', href: '/staff' },
     { name: 'Projects', href: '/projects' },
     { name: 'Publications', href: '/publications' },
-    { name: 'Labs', href: '/labs' },
     { name: 'Events', href: '/events' },
   ];
 

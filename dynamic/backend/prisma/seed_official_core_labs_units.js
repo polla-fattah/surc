@@ -77,18 +77,79 @@ async function main() {
       capacity: '15',
       status: 'ACTIVE',
       image: '/images/labs/lab-engineering.svg',
-      platforms: ['Nanoparticle Synthesis', 'Material Characterization', 'Targeted Drug Delivery', 'Electron Microscopy']
+      platforms: ['Nanoparticle Synthesis', 'Material Characterization', 'Targeted Drug Delivery', 'Electron Microscopy'],
+      equipment: [
+        { id: 'eq-nt-001', name: 'TEM Sample Preparation & Ion Milling Unit', category: 'Electron Microscopy', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+        { id: 'eq-nt-002', name: 'Dynamic Light Scattering (DLS) Zeta Potential Analyzer', category: 'Material Characterization', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+        { id: 'eq-nt-003', name: 'High-Intensity Ultrasonic Homogenizer & Sonicator', category: 'Nanoparticle Synthesis', totalUnits: 2, workingUnits: 2, outOfOrder: 0, status: 'available' },
+        { id: 'eq-nt-004', name: 'High-Temperature Muffle Furnace (1200°C)', category: 'Materials Synthesis', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+        { id: 'eq-nt-005', name: 'Precision Vacuum Spin Coater', category: 'Thin Film Fabrication', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' }
+      ]
     }
   ];
 
+  // Add equipment to other core labs
+  officialLabs[0].equipment = [
+    { id: 'eq-cb-001', name: 'Automated Cell Counter', category: 'Cell Culture', totalUnits: 2, workingUnits: 2, outOfOrder: 0, status: 'available' },
+    { id: 'eq-cb-002', name: 'Real-Time PCR System (qPCR)', category: 'Molecular Biology', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+    { id: 'eq-cb-003', name: 'Fluorescence Phase Contrast Microscope', category: 'Cell Imaging', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+    { id: 'eq-cb-004', name: 'CO2 Incubator BSL-2', category: 'Cell Culture', totalUnits: 3, workingUnits: 3, outOfOrder: 0, status: 'available' },
+    { id: 'eq-cb-005', name: 'High-Speed Refrigerated Centrifuge', category: 'Sample Processing', totalUnits: 2, workingUnits: 2, outOfOrder: 0, status: 'available' },
+    { id: 'eq-cb-006', name: 'Multimode Microplate Reader (ELISA)', category: 'Biomarker Discovery', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' }
+  ];
+
+  officialLabs[1].equipment = [
+    { id: 'eq-me-001', name: 'Mastercycler Gradient PCR Machine', category: 'Genetic Engineering', totalUnits: 4, workingUnits: 4, outOfOrder: 0, status: 'available' },
+    { id: 'eq-me-002', name: 'Gel Documentation & Imaging System', category: 'Recombinant DNA', totalUnits: 2, workingUnits: 2, outOfOrder: 0, status: 'available' },
+    { id: 'eq-me-003', name: 'NanoDrop Microvolume Spectrophotometer', category: 'Molecular Biology', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+    { id: 'eq-me-004', name: 'Fast Protein Liquid Chromatography (FPLC)', category: 'Protein Expression', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+    { id: 'eq-me-005', name: 'Ultra-Low Temperature Freezer (-80°C)', category: 'Biobanking', totalUnits: 2, workingUnits: 2, outOfOrder: 0, status: 'available' }
+  ];
+
+  officialLabs[2].equipment = [
+    { id: 'eq-ca-001', name: 'High-Performance Liquid Chromatograph (HPLC)', category: 'Chromatography', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+    { id: 'eq-ca-002', name: 'Atomic Absorption Spectrophotometer (AAS)', category: 'Heavy Metal Analysis', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+    { id: 'eq-ca-003', name: 'Double Beam UV-Vis Spectrophotometer', category: 'Spectrophotometry', totalUnits: 2, workingUnits: 2, outOfOrder: 0, status: 'available' },
+    { id: 'eq-ca-004', name: 'Gas Chromatography-Mass Spectrophotometer (GC-MS)', category: 'Organic Analysis', totalUnits: 1, workingUnits: 1, outOfOrder: 0, status: 'available' },
+    { id: 'eq-ca-005', name: 'Multi-Parameter Water Quality Meter', category: 'Environmental Analysis', totalUnits: 3, workingUnits: 3, outOfOrder: 0, status: 'available' }
+  ];
+
   for (const lab of officialLabs) {
+    const { equipment, ...labData } = lab;
     const existing = await prisma.lab.findUnique({ where: { id: lab.id } });
     if (existing) {
       console.log(`Updating Core Lab: ${lab.title}`);
-      await prisma.lab.update({ where: { id: lab.id }, data: lab });
+      await prisma.lab.update({ where: { id: lab.id }, data: labData });
     } else {
       console.log(`Creating Core Lab: ${lab.title}`);
-      await prisma.lab.create({ data: lab });
+      await prisma.lab.create({ data: labData });
+    }
+
+    if (equipment && Array.isArray(equipment)) {
+      for (const eqItem of equipment) {
+        await prisma.equipment.upsert({
+          where: { id: eqItem.id },
+          update: {
+            name: eqItem.name,
+            labId: lab.id,
+            category: eqItem.category,
+            totalUnits: eqItem.totalUnits,
+            workingUnits: eqItem.workingUnits,
+            outOfOrder: eqItem.outOfOrder,
+            status: eqItem.status
+          },
+          create: {
+            id: eqItem.id,
+            name: eqItem.name,
+            labId: lab.id,
+            category: eqItem.category,
+            totalUnits: eqItem.totalUnits,
+            workingUnits: eqItem.workingUnits,
+            outOfOrder: eqItem.outOfOrder,
+            status: eqItem.status
+          }
+        });
+      }
     }
   }
 

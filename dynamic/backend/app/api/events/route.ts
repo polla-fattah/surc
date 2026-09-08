@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         category: category || 'Seminar',
         description: description || null,
         content: content || null,
-        location: location || 'Salahaddin University-Erbil Research Center',
+        location: location || 'SURC',
         eventTime: eventTime || '10:00 AM - 01:00 PM',
         draft: draft ?? false,
         featured: featured ?? false

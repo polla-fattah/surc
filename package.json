@@ -5,7 +5,7 @@
   "author": "gethugothemes",
   "scripts": {
     "dev:backend": "cd dynamic/backend && npm run dev",
-    "dev:frontend": "cd dynamic/frontend && npx next dev -p 3001",
+    "dev:frontend": "cd dynamic/frontend && npm run dev",
     "dev": "npm run dev:backend & npm run dev:frontend",
     "db:seed": "cd dynamic/backend && npx ts-node prisma/seed.ts",
     "db:push": "cd dynamic/backend && npx prisma db push"

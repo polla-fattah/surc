@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { Calendar, MapPin, Clock, ArrowRight, Bookmark, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Calendar, MapPin, Clock, ArrowRight, Bookmark, Search, Filter, Loader2, CheckCircle2 } from 'lucide-react';
 import { getEventImageUrl } from '@/lib/imageResolver';
 
 interface Event {
@@ -23,12 +23,15 @@ interface Props {
   initialEvents: Event[];
 }
 
-const ITEMS_PER_PAGE = 12;
+const FB_BATCH_SIZE = 10;
 
 export default function EventsExplorerClient({ initialEvents }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(FB_BATCH_SIZE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Extract unique categories
   const categories = useMemo(() => {
@@ -40,7 +43,7 @@ export default function EventsExplorerClient({ initialEvents }: Props) {
     return Array.from(cats);
   }, [initialEvents]);
 
-  // Filter events
+  // Filter events by search & category
   const filteredEvents = useMemo(() => {
     return initialEvents.filter(ev => {
       const matchesSearch = 
@@ -56,21 +59,68 @@ export default function EventsExplorerClient({ initialEvents }: Props) {
     });
   }, [initialEvents, searchQuery, selectedCategory]);
 
-  // Pagination calculation
-  const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1;
-  const validCurrentPage = Math.min(currentPage, totalPages);
+  // Slice events based on scroll-down visible count
+  const visibleEvents = useMemo(() => {
+    return filteredEvents.slice(0, visibleCount);
+  }, [filteredEvents, visibleCount]);
 
-  const paginatedEvents = useMemo(() => {
-    const startIdx = (validCurrentPage - 1) * ITEMS_PER_PAGE;
-    return filteredEvents.slice(startIdx, startIdx + ITEMS_PER_PAGE);
-  }, [filteredEvents, validCurrentPage]);
+  const hasMore = visibleCount < filteredEvents.length;
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-      window.scrollTo({ top: 300, behavior: 'smooth' });
+  // Load next batch of 10 items
+  const loadNextBatch = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount(prev => Math.min(prev + FB_BATCH_SIZE, filteredEvents.length));
+      setIsLoadingMore(false);
+    }, 150);
+  }, [isLoadingMore, hasMore, filteredEvents.length]);
+
+  // 1. Facebook-style Window Scroll Listener (Early trigger when within 1000px of bottom)
+  useEffect(() => {
+    if (!hasMore) return;
+
+    const handleWindowScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const clientHeight = window.innerHeight;
+
+      if (scrollHeight - scrollTop - clientHeight < 1000) {
+        loadNextBatch();
+      }
+    };
+
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    // Trigger check immediately in case page is short
+    handleWindowScroll();
+
+    return () => window.removeEventListener('scroll', handleWindowScroll);
+  }, [hasMore, loadNextBatch]);
+
+  // 2. IntersectionObserver Backup with 1000px root margin
+  useEffect(() => {
+    if (!hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadNextBatch();
+        }
+      },
+      { threshold: 0.01, rootMargin: '1000px' }
+    );
+
+    const currentTarget = bottomSentinelRef.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
     }
-  };
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasMore, loadNextBatch]);
 
   return (
     <div className="space-y-10">
@@ -88,7 +138,7 @@ export default function EventsExplorerClient({ initialEvents }: Props) {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setCurrentPage(1);
+                setVisibleCount(FB_BATCH_SIZE);
               }}
               className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--primary-maroon)]/30 focus:border-[var(--primary-maroon)] transition-all"
             />
@@ -96,7 +146,7 @@ export default function EventsExplorerClient({ initialEvents }: Props) {
 
           {/* Result Count Indicator */}
           <div className="text-xs font-bold text-slate-500 whitespace-nowrap">
-            Showing <span className="text-[var(--secondary-blue)]">{filteredEvents.length}</span> total events
+            Showing <span className="text-[var(--primary-maroon)]">{visibleEvents.length}</span> of <span className="text-[var(--secondary-blue)]">{filteredEvents.length}</span> events
           </div>
         </div>
 
@@ -110,9 +160,9 @@ export default function EventsExplorerClient({ initialEvents }: Props) {
               key={cat}
               onClick={() => {
                 setSelectedCategory(cat);
-                setCurrentPage(1);
+                setVisibleCount(FB_BATCH_SIZE);
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedCategory.toLowerCase() === cat.toLowerCase()
                   ? 'bg-[var(--primary-maroon)] text-white shadow-md shadow-red-900/10'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -125,7 +175,7 @@ export default function EventsExplorerClient({ initialEvents }: Props) {
       </div>
 
       {/* Events Grid */}
-      {paginatedEvents.length === 0 ? (
+      {visibleEvents.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-3">
           <Bookmark className="w-8 h-8 text-slate-300 mx-auto" />
           <h3 className="text-sm font-bold text-slate-700">No matching events found</h3>
@@ -133,7 +183,7 @@ export default function EventsExplorerClient({ initialEvents }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {paginatedEvents.map((ev) => (
+          {visibleEvents.map((ev) => (
             <div 
               key={ev.id} 
               className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:border-[var(--primary-maroon)] hover:shadow-md transition-all group"
@@ -207,66 +257,22 @@ export default function EventsExplorerClient({ initialEvents }: Props) {
         </div>
       )}
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-          <div className="text-xs font-bold text-slate-500">
-            Page <span className="text-[var(--secondary-blue)]">{validCurrentPage}</span> of <span className="text-[var(--secondary-blue)]">{totalPages}</span>
+      {/* Facebook-style Bottom Loading Sentinel */}
+      <div ref={bottomSentinelRef} className="py-8 text-center min-h-[60px] flex items-center justify-center">
+        {isLoadingMore && (
+          <div className="inline-flex items-center space-x-2.5 px-5 py-2.5 rounded-full bg-white border border-slate-200 shadow-sm text-xs font-bold text-[var(--primary-maroon)] animate-pulse">
+            <Loader2 className="w-4 h-4 animate-spin text-[var(--primary-maroon)]" />
+            <span>Loading 10 more events...</span>
           </div>
+        )}
 
-          <div className="flex items-center space-x-2">
-            {/* Previous Page */}
-            <button
-              onClick={() => handlePageChange(validCurrentPage - 1)}
-              disabled={validCurrentPage === 1}
-              className={`p-2 rounded-xl text-xs font-bold border transition-all flex items-center space-x-1 ${
-                validCurrentPage === 1
-                  ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-[var(--primary-maroon)]'
-              }`}
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Prev</span>
-            </button>
-
-            {/* Page Number Buttons */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(p => p === 1 || p === totalPages || Math.abs(p - validCurrentPage) <= 2)
-              .map((p, idx, arr) => {
-                const showEllipsis = idx > 0 && p - arr[idx - 1] > 1;
-                return (
-                  <React.Fragment key={p}>
-                    {showEllipsis && <span className="text-slate-400 text-xs px-1">...</span>}
-                    <button
-                      onClick={() => handlePageChange(p)}
-                      className={`w-9 h-9 rounded-xl text-xs font-extrabold transition-all ${
-                        validCurrentPage === p
-                          ? 'bg-[var(--primary-maroon)] text-white shadow-md shadow-red-900/10'
-                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  </React.Fragment>
-                );
-              })}
-
-            {/* Next Page */}
-            <button
-              onClick={() => handlePageChange(validCurrentPage + 1)}
-              disabled={validCurrentPage === totalPages}
-              className={`p-2 rounded-xl text-xs font-bold border transition-all flex items-center space-x-1 ${
-                validCurrentPage === totalPages
-                  ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-[var(--primary-maroon)]'
-              }`}
-            >
-              <span>Next</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+        {!hasMore && filteredEvents.length > 0 && (
+          <div className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-full bg-slate-100 text-slate-500 text-xs font-bold border border-slate-200">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>All {filteredEvents.length} events loaded</span>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
     </div>
   );
