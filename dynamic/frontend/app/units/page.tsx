@@ -62,68 +62,6 @@ export default async function UnitsPage() {
           </div>
         )}
 
-        {/* 🎯 2. 5-Year Strategic Plan & Activity Roadmap (2026–2030) */}
-        <div className="bg-gradient-to-br from-slate-900 to-[var(--secondary-blue)] text-white rounded-3xl p-8 sm:p-12 shadow-md space-y-8">
-          <div className="flex items-center justify-between border-b border-slate-700 pb-4">
-            <div className="flex items-center space-x-3">
-              <Compass className="w-6 h-6 text-[var(--accent-gold)]" />
-              <div>
-                <h2 className="text-lg font-extrabold text-white">
-                  SURC 5-Year Strategic Roadmap (2026–2030)
-                </h2>
-                <p className="text-xs text-slate-300">
-                  Aligning university research excellence with regional market demands and evidence-based governance.
-                </p>
-              </div>
-            </div>
-            <span className="hidden sm:inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-[var(--accent-gold)] text-slate-900 uppercase">
-              Strategic Plan
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Pillar 1: Vision & Labour Market */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 space-y-3">
-              <div className="w-8 h-8 rounded-lg bg-[var(--accent-gold)]/20 text-[var(--accent-gold)] flex items-center justify-center">
-                <Target className="w-4 h-4" />
-              </div>
-              <h3 className="text-xs font-extrabold text-amber-300 uppercase tracking-wider">
-                1. Labour Market Alignment (بازاڕی کار)
-              </h3>
-              <p className="text-xs text-slate-200 leading-relaxed">
-                Directing postgraduate supervision and specialized technical workshops (60-hr ArcGIS Pro, BSL-2 Cell Culture, Molecular Cloning) to supply highly-skilled talent to Kurdistan Regional Government (KRG) ministries, pharmaceutical industries, and environmental consultancies.
-              </p>
-            </div>
-
-            {/* Pillar 2: Monitoring & Follow-up */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 space-y-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-400/20 text-emerald-300 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-              <h3 className="text-xs font-extrabold text-emerald-300 uppercase tracking-wider">
-                2. Follow-Up & Monitoring (بەدواداچوون)
-              </h3>
-              <p className="text-xs text-slate-200 leading-relaxed">
-                Implementing standardized monitoring mechanisms for research project milestones, equipment booking lifecycle, ethics clearance review queues (Animal AREC, Human, Botanical), and mandatory 300,000 IQD lab deposit agreements.
-              </p>
-            </div>
-
-            {/* Pillar 3: Publishing & Policy */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 space-y-3">
-              <div className="w-8 h-8 rounded-lg bg-cyan-400/20 text-cyan-300 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-              <h3 className="text-xs font-extrabold text-cyan-300 uppercase tracking-wider">
-                3. Publishing & Policy Advisory
-              </h3>
-              <p className="text-xs text-slate-200 leading-relaxed">
-                Establishing the flagship <em>Journal of Intelligent Spatial Data Science (JISDS)</em> in collaboration with Sapienza University of Rome, and issuing real-time climate dashboards (mountain snow-cover change in Zagros range) for governmental decision-makers.
-              </p>
-            </div>
-
-          </div>
-        </div>
 
         {/* Units Grid */}
         <div className="space-y-6">
