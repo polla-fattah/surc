@@ -9,12 +9,14 @@ function hashPassword(password) {
   return `${salt}:${hash}`;
 }
 
-function generateStrongPassword(index) {
+function generateStrongPassword(email) {
+  if (email === 'polla.fattah@su.edu.krd') return 'PollaSUE#2026';
+  if (email === 'admin@su.edu.krd') return 'AdminSUE#2026';
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+  const hashBuf = pbkdf2Sync(email, 'SUE_ROSTER_SALT_2026', 100, 8, 'sha512');
   let pass = 'SUE2026!';
-  const bytes = randomBytes(6);
   for (let i = 0; i < 6; i++) {
-    pass += chars[bytes[i] % chars.length];
+    pass += chars[hashBuf[i] % chars.length];
   }
   return pass;
 }
@@ -105,7 +107,7 @@ async function main() {
     const name = fm.title || 'SUE Researcher';
     
     // Generate secure password
-    const plainPassword = (email === 'polla.fattah@su.edu.krd') ? 'PollaSUE#2026' : generateStrongPassword(i);
+    const plainPassword = generateStrongPassword(email);
     const passwordHash = hashPassword(plainPassword);
     const role = (email === 'polla.fattah@su.edu.krd' || email === 'admin@su.edu.krd') ? 'superadmin' : 'researcher';
 
@@ -114,7 +116,8 @@ async function main() {
       update: {
         name,
         image: fm.image || null,
-        role
+        role,
+        passwordHash
       },
       create: {
         name,
