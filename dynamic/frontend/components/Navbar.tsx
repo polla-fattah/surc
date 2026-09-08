@@ -2,12 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Globe, ArrowUpRight, Menu, X, Landmark } from 'lucide-react';
+import { ArrowUpRight, Menu, X, Landmark } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState('EN');
   const { data: session } = useSession();
 
   const navLinks = [
@@ -55,35 +54,6 @@ export default function Navbar() {
                   </Link>
                 ))}
               </nav>
-
-              {/* Language Swapper Dropdown Container */}
-              <div className="relative lang-container py-1 ml-2 pl-3 border-l border-white/20">
-                <button className="flex items-center space-x-1.5 text-white/85 hover:text-white transition-colors">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>{currentLang === 'EN' ? 'English' : currentLang === 'KU' ? 'Soranî' : 'العربية'}</span>
-                </button>
-
-                <div className="absolute right-0 mt-1 w-36 bg-white border border-[var(--border-color)] rounded-xl shadow-lg lang-dropdown py-1 overflow-hidden">
-                  <button
-                    onClick={() => setCurrentLang('EN')}
-                    className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-[var(--maroon-wash)] hover:text-[var(--primary-maroon)] transition-colors block text-stone-700"
-                  >
-                    English
-                  </button>
-                  <button
-                    onClick={() => setCurrentLang('KU')}
-                    className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-[var(--maroon-wash)] hover:text-[var(--primary-maroon)] transition-colors block text-stone-700"
-                  >
-                    کوردی (Soranî)
-                  </button>
-                  <button
-                    onClick={() => setCurrentLang('AR')}
-                    className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-[var(--maroon-wash)] hover:text-[var(--primary-maroon)] transition-colors block text-stone-700"
-                  >
-                    العربية
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -159,12 +129,6 @@ export default function Navbar() {
 
             {/* Mobile menu button */}
             <div className="lg:hidden flex items-center space-x-2">
-              <button
-                onClick={() => setCurrentLang(prev => prev === 'EN' ? 'KU' : prev === 'KU' ? 'AR' : 'EN')}
-                className="p-2 rounded-lg text-stone-500 hover:text-[var(--primary-maroon)] hover:bg-[var(--maroon-wash)] transition-colors"
-              >
-                <Globe className="w-5 h-5" />
-              </button>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 rounded-xl text-stone-600 hover:text-[var(--primary-maroon)] hover:bg-[var(--maroon-wash)] transition-all"

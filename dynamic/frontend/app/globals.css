@@ -162,19 +162,6 @@ h1, h2 {
    Navigation helpers
    ========================================================================== */
 
-/* Language Swapper Animate dropdown */
-.lang-dropdown {
-  opacity: 0;
-  transform: translateY(10px) scale(0.95);
-  pointer-events: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.lang-container:hover .lang-dropdown {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
-}
 
 /* ==========================================================================
    Micro-animations
