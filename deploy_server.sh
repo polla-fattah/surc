@@ -51,6 +51,7 @@ echo -e "${GREEN}[3/8] Setting up application directory at ${APP_DIR}...${NC}"
 if [ -d "$APP_DIR" ]; then
   echo "Existing directory found. Pulling latest code from GitHub..."
   cd "$APP_DIR"
+  git checkout -- . 2>/dev/null || true
   git pull origin main
 else
   echo "Cloning repository git@github.com:polla-fattah/surc.git..."
