@@ -41,6 +41,13 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE surc_db TO surc_user;
 echo -e "${GREEN}[3/3] Importing physical SQL snapshot (surc_production_db.sql)...${NC}"
 sudo -u postgres psql -d surc_db -f "$DUMP_FILE"
 
+echo -e "${GREEN}[4/4] Transferring table ownership and permissions to 'surc_user'...${NC}"
+sudo -u postgres psql -d surc_db -c "ALTER SCHEMA public OWNER TO surc_user;" 2>/dev/null || true
+sudo -u postgres psql -d surc_db -c "REASSIGN OWNED BY postgres TO surc_user;" 2>/dev/null || true
+sudo -u postgres psql -d surc_db -c "GRANT ALL PRIVILEGES ON DATABASE surc_db TO surc_user;" 2>/dev/null || true
+sudo -u postgres psql -d surc_db -c "GRANT ALL ON ALL TABLES IN SCHEMA public TO surc_user;" 2>/dev/null || true
+sudo -u postgres psql -d surc_db -c "GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO surc_user;" 2>/dev/null || true
+
 echo -e "${GOLD}"
 echo "=========================================================================="
 echo "  SUCCESS: Old database deleted & physical snapshot imported faithfully!  "

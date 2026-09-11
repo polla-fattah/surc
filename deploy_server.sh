@@ -75,6 +75,10 @@ if command -v psql &> /dev/null; then
   sudo -u postgres psql -c "ALTER USER surc_user WITH PASSWORD '${DB_PASS}';" 2>/dev/null || true
   sudo -u postgres psql -c "CREATE DATABASE surc_db OWNER surc_user;" 2>/dev/null || true
   sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE surc_db TO surc_user;" 2>/dev/null || true
+  sudo -u postgres psql -d surc_db -c "ALTER SCHEMA public OWNER TO surc_user;" 2>/dev/null || true
+  sudo -u postgres psql -d surc_db -c "REASSIGN OWNED BY postgres TO surc_user;" 2>/dev/null || true
+  sudo -u postgres psql -d surc_db -c "GRANT ALL ON ALL TABLES IN SCHEMA public TO surc_user;" 2>/dev/null || true
+  sudo -u postgres psql -d surc_db -c "GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO surc_user;" 2>/dev/null || true
 fi
 
 cat <<EOF > "$APP_DIR/dynamic/backend/.env"
