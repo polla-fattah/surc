@@ -107,7 +107,7 @@ echo -e "${GREEN}[5/8] Building Backend API and running database migrations...${
 cd "$APP_DIR/dynamic/backend"
 npm install
 npx prisma db push --accept-data-loss
-node prisma/seed_all_content_data.js || true
+node prisma/sync_master_database.js || true
 npm run build
 
 # 6. BUILD FRONTEND WEB PORTAL & PRESERVE UPLOADS DIRECTORY

@@ -1,6 +1,6 @@
 # 🎓 SUE Research Center - Staff Account Credentials Roster
 
-Generated on 2026-09-08T07:59:46.916Z
+Generated on 2026-09-11T23:18:49.651Z
 
 | # | Researcher Name | Official SUE Email | Access Role | Temporary Secure Password |
 |---|---|---|---|---|
