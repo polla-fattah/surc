@@ -103,16 +103,21 @@ EOF
 
 echo "Environment configuration files created."
 
-# 5. BUILD BACKEND & DATABASE MIGRATIONS
-echo -e "${GREEN}[5/8] Building Backend API and running database migrations...${NC}"
+# 5. BUILD BACKEND API, SYNC DATABASE & START BACKEND SERVICE
+echo -e "${GREEN}[5/8] Building Backend API, running database migrations, and starting service...${NC}"
 cd "$APP_DIR/dynamic/backend"
 npm install
 npx prisma db push --accept-data-loss
 node prisma/sync_master_database.js || true
 npm run build
 
+pm2 delete surc-backend 2>/dev/null || true
+pm2 start npm --name "surc-backend" -- run start -- --port 3000
+echo "Waiting 3 seconds for Backend API on port 3000 to initialize..."
+sleep 3
+
 # 6. BUILD FRONTEND WEB PORTAL & PRESERVE UPLOADS DIRECTORY
-echo -e "${GREEN}[6/8] Building Frontend Web Portal...${NC}"
+echo -e "${GREEN}[6/8] Building Frontend Web Portal (Fetching live backend data)...${NC}"
 mkdir -p "$APP_DIR/dynamic/frontend/public/images/uploads"
 chmod -R 777 "$APP_DIR/dynamic/frontend/public/images/uploads" 2>/dev/null || true
 
@@ -120,15 +125,9 @@ cd "$APP_DIR/dynamic/frontend"
 npm install
 npm run build
 
-# 7. CONFIGURE PM2 PROCESS MANAGEMENT
-echo -e "${GREEN}[7/8] Starting production processes with PM2...${NC}"
-pm2 delete surc-backend 2>/dev/null || true
+# 7. START FRONTEND PROCESS WITH PM2 & SAVE STATE
+echo -e "${GREEN}[7/8] Starting production frontend process with PM2...${NC}"
 pm2 delete surc-frontend 2>/dev/null || true
-
-cd "$APP_DIR/dynamic/backend"
-pm2 start npm --name "surc-backend" -- run start -- --port 3000
-
-cd "$APP_DIR/dynamic/frontend"
 pm2 start npm --name "surc-frontend" -- run start -- --port 3001
 
 pm2 save
